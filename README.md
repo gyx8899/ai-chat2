@@ -1,6 +1,13 @@
-# AI Chat
+# AI Chat — 全栈 AI 对话应用
 
-基于 FastAPI + Next.js 的 AI 对话助手，支持多提示词类型切换、会话持久化、SSE 流式响应。前端通过 URL 参数驱动提示词上下文，后端以 JSON 配置文件管理 system prompt，支持运行时热重载。
+基于 React + FastAPI 的全栈应用，演示 AI 聊天产品的核心能力架构。
+
+## 核心功能
+
+- **SSE 流式输出** — 实时逐字渲染 AI 回答
+- **模拟 RAG 检索** — 知识库存静态文件，关键词匹配召回上下文，拼接到提示词引导大模型生成，无需向量库即可跑通「检索-增强生成」全流程
+- **多会话历史管理** — 会话持久化，支持按角色类型隔离
+- **多模型切换** — 一行配置切换 OpenAI / Ollama / 通义千问 / Mock
 
 ## 技术栈
 
@@ -201,4 +208,4 @@ alembic revision --autogenerate -m "描述"
 
 ## 许可证
 
-MIT
+MIT License
