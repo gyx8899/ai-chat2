@@ -1,0 +1,29 @@
+{
+  "name": "ai-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Chat - Next.js SSR Frontend + FastAPI Backend",
+  "scripts": {
+    "_check-node": "source ~/.nvm/nvm.sh && nvm use 20 || true",
+    "dev": "npm run _check-node && concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run _check-node && cd frontend && npm run dev",
+    "dev:backend": "cd backend && source .venv/bin/activate && python -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload",
+    "build": "npm run _check-node && cd frontend && npm run build",
+    "build:preview": "npm run _check-node && cd frontend && npm run build:preview",
+    "lint": "npm run _check-node && cd frontend && npm run lint",
+    "lint:fix": "npm run _check-node && cd frontend && npm run lint:fix",
+    "format": "npm run _check-node && cd frontend && npm run format",
+    "type-check": "npm run _check-node && cd frontend && npm run type-check",
+    "install:all": "npm run _check-node && npm install && cd frontend && npm install && cd ../backend && pip install -e .",
+    "install:frontend": "npm run _check-node && cd frontend && npm install",
+    "install:backend": "cd backend && pip install -e .",
+    "test:frontend": "npm run _check-node && cd frontend && npm test",
+    "test:backend": "cd backend && source .venv/bin/activate && pytest"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
