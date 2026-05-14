@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useTranslation } from '@/hooks/useTranslation'
 
-const GITHUB_REPO = 'https://github.com/gyx8899/ai-chat'
+const GITHUB_REPO = 'https://github.com/gyx8899/ai-chat2'
 const AVATAR_URL = 'https://avatars.githubusercontent.com/u/2103745?s=48&v=4'
 
 function PortfolioCTA() {
@@ -34,7 +34,7 @@ function PortfolioCTA() {
           className="inline-block font-mono text-[13px] font-medium tracking-[0.01em] transition-all duration-fast ease-smooth hover:underline"
           style={{ color: 'var(--primary-oklch)' }}
         >
-          gyx8899/ai-chat
+          gyx8899/ai-chat2
         </a>
         <span
           className="block font-mono text-[10px] mt-0.5 mb-2.5"
