@@ -198,3 +198,7 @@ alembic revision --autogenerate -m "描述"
 | `GET` | `/metrics` | Prometheus 指标（请求延迟 / 错误率 / 在线会话数） |
 
 详细 API 文档参见 [backend/README.md](backend/README.md) 和 [frontend/README.md](frontend/README.md)。
+
+## 许可证
+
+MIT
