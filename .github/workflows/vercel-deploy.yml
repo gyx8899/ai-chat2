@@ -1,0 +1,55 @@
+# ============================================
+# Vercel 前端自动部署
+# ============================================
+# 
+# 前置条件：
+# 1. 在 Vercel Dashboard 导入 GitHub 仓库并完成初始配置
+# 2. 在 GitHub 仓库 Settings → Secrets and variables → Actions 中配置：
+#    - VERCEL_TOKEN      (Vercel → Account Settings → Tokens)
+#    - VERCEL_ORG_ID     (Vercel → Team/Account Settings)
+#    - VERCEL_PROJECT_ID (Vercel → Project Settings → General)
+# 3. 在 Vercel Dashboard → Project Settings → Environment Variables 中配置：
+#    - NEXT_PUBLIC_API_URL: 后端 API 地址
+# ============================================
+
+name: Vercel Production Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'frontend/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build check
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:8000' }}
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend
+          vercel-args: '--prod'

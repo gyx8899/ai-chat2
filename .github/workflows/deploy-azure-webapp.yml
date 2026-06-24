@@ -1,0 +1,88 @@
+# ============================================
+# Azure Web Apps Python 部署
+# ============================================
+#
+# 使用方式：
+# 1. 在 Azure 门户创建 Web App (Python 运行时)
+# 2. 获取发布配置文件 (Publish Profile)
+# 3. 在 GitHub Secrets 中添加：
+#    - AZURE_WEBAPP_PUBLISH_PROFILE: 发布配置文件内容
+# 4. 配置其他 Secrets：
+#    - DATABASE_URL: 数据库连接字符串
+#    - API_KEY: API 密钥
+#    - SECRET_KEY: 应用密钥
+# ============================================
+
+name: Deploy Python Backend to Azure Web App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Create startup command
+        run: |
+          # Azure App Service 需要 startup.txt 指定启动命令
+          echo "gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 app.main:app" > startup.txt
+
+      - name: Zip deployment package
+        run: |
+          # 打包应用文件
+          zip -r release.zip . -x "*.git*" "*.venv*" "*.pyc*" "tests/*" "docs/*" ".github/*" "data/*"
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release.zip
+
+      - name: Configure application settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          settings: |
+            [
+              {
+                "name": "DATABASE_URL",
+                "value": "${{ secrets.DATABASE_URL }}",
+                "slotSetting": false
+              },
+              {
+                "name": "API_KEY",
+                "value": "${{ secrets.API_KEY }}",
+                "slotSetting": false
+              },
+              {
+                "name": "SECRET_KEY",
+                "value": "${{ secrets.SECRET_KEY }}",
+                "slotSetting": false
+              },
+              {
+                "name": "WEBSITE_HTTPLOGGING_RETENTION_DAYS",
+                "value": "7",
+                "slotSetting": false
+              },
+              {
+                "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                "value": "true",
+                "slotSetting": false
+              }
+            ]

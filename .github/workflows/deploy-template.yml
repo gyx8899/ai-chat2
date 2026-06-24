@@ -1,0 +1,162 @@
+# ============================================
+# 部署选项说明：
+# ============================================
+# 
+# 【推荐】选项 A: Vercel 部署前端 + 云服务器后端
+# - 前端：推送到 GitHub 后自动部署到 Vercel（零配置）
+# - 后端：部署到云服务器（如阿里云、腾讯云）
+# - 查看下方 deploy-server.yml
+#
+# 选项 B: Docker 容器部署（适合有 Docker 环境的服务器）
+# - 查看 deploy-docker.yml
+#
+# 选项 C: 直接部署前端到 GitHub Pages
+# - 适合纯静态 Next.js 导出
+# ============================================
+
+# ============================================
+# 选项 A: 服务器部署（推荐）
+# ============================================
+# 使用方式：
+# 1. 复制 deploy-server.yml 到 .github/workflows/deploy.yml
+# 2. 配置 Secrets（在 Settings → Secrets 中添加）：
+#    - SERVER_HOST: 服务器 IP
+#    - SERVER_USER: SSH 用户名
+#    - SERVER_SSH_KEY: SSH 私钥
+#    - VERCEL_TOKEN: Vercel Token（可选，用于前端部署）
+#    - VERCEL_ORG_ID: Vercel 组织 ID（可选）
+#    - VERCEL_PROJECT_ID: Vercel 项目 ID（可选）
+# ============================================
+
+name: Deploy to Server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  # 前端构建
+  frontend-build:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    outputs:
+      build_version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+
+      - name: Generate version
+        id: version
+        run: echo "version=build_${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-${{ github.run_number }}
+          path: frontend/.next
+          retention-days: 7
+
+  # 后端构建
+  backend-build:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/ai-chat-backend:${{ github.run_number }}
+            ${{ secrets.DOCKER_USERNAME }}/ai-chat-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 部署到服务器
+  deploy:
+    needs: [frontend-build, backend-build]
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            # 拉取最新镜像
+            docker pull ${{ secrets.DOCKER_USERNAME }}/ai-chat-backend:latest
+            
+            # 停止旧容器
+            docker-compose -f ~/ai-chat/docker-compose.yml down || true
+            
+            # 更新 docker-compose 配置
+            cat > ~/ai-chat/docker-compose.yml << 'EOF'
+            version: '3.8'
+            services:
+              backend:
+                image: ${{ secrets.DOCKER_USERNAME }}/ai-chat-backend:latest
+                restart: always
+                ports:
+                  - "8000:8000"
+                environment:
+                  - DATABASE_URL=${{ secrets.DATABASE_URL }}
+                  - API_KEY=${{ secrets.API_KEY }}
+                networks:
+                  - app-network
+            
+              nginx:
+                image: nginx:alpine
+                restart: always
+                ports:
+                  - "80:80"
+                  - "443:443"
+                volumes:
+                  - ./nginx.conf:/etc/nginx/nginx.conf:ro
+                  - ./frontend-build:/var/www/html
+                depends_on:
+                  - backend
+                networks:
+                  - app-network
+            
+            networks:
+              app-network:
+                driver: bridge
+            EOF
+            
+            # 启动服务
+            docker-compose -f ~/ai-chat/docker-compose.yml up -d
+            
+            # 清理旧镜像
+            docker image prune -f
