@@ -1,0 +1,16 @@
+# 排除后端相关文件
+../backend
+../.venv
+**/*.py
+**/__pycache__
+**/*.egg-info
+
+# 排除文档
+../README.md
+../LICENSE
+../.github
+
+# 排除其他前端无关文件
+../package.json
+../package-lock.json
+../.nvmrc
