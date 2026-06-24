@@ -1,0 +1,37 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+
+# Virtual environment
+.venv/
+
+# Testing
+.tox/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Development
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Data
+data/
